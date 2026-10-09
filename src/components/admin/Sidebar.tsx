@@ -31,6 +31,15 @@ export function SidebarNav() {
           </Link>
         );
       })}
+      {/* Aplikasi terpisah untuk mengelola AI agent WhatsApp */}
+      <a
+        href="https://wa.pt-aau.com/admin/login"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="shrink-0 border-l-4 border-transparent px-4 py-2.5 font-display text-[0.95rem] font-semibold uppercase tracking-wider text-signal transition-colors hover:text-white lg:mt-3 lg:border-t lg:border-t-white/10 lg:pt-4"
+      >
+        WA AI Agent ↗
+      </a>
     </nav>
   );
 }
