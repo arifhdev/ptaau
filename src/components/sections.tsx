@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { company, projects, testimonials, type Dictionary, type Project } from "@/lib/content";
+import type { Dictionary, Project } from "@/lib/content";
+import { getProjects, getSettings, getTestimonials } from "@/lib/data";
 import { projectHref, routes, type Locale } from "@/lib/routes";
 import { DownloadIcon } from "./Footer";
 
@@ -203,7 +204,9 @@ export function ProjectCard({ project, locale, dict, large = false }: { project:
   );
 }
 
-export function ProjectsPreview({ locale, dict }: { locale: Locale; dict: Dictionary }) {
+export async function ProjectsPreview({ locale, dict }: { locale: Locale; dict: Dictionary }) {
+  const projects = await getProjects();
+  if (projects.length === 0) return null;
   const [first, ...rest] = projects.slice(0, 5);
   return (
     <section className="bg-paper-2 py-20 sm:py-28">
@@ -238,14 +241,16 @@ export function ProjectsPreview({ locale, dict }: { locale: Locale; dict: Dictio
   );
 }
 
-export function Testimonials({ dict }: { dict: Dictionary }) {
+export async function Testimonials({ dict }: { dict: Dictionary }) {
+  const testimonials = await getTestimonials();
+  if (testimonials.length === 0) return null;
   return (
     <section className="py-20 sm:py-28">
       <Container>
         <SectionHeading eyebrow={dict.testimonialsSection.eyebrow} title={dict.testimonialsSection.title} />
         <div className="mt-12 grid gap-4 md:grid-cols-2">
           {testimonials.map((t) => (
-            <figure key={t.name} className="flex flex-col justify-between border border-line bg-white p-8 sm:p-10">
+            <figure key={t.id ?? t.name} className="flex flex-col justify-between border border-line bg-white p-8 sm:p-10">
               <blockquote className="relative">
                 <span className="absolute -left-1 -top-6 font-display text-7xl font-extrabold leading-none text-signal" aria-hidden>
                   “
@@ -272,7 +277,8 @@ export function Testimonials({ dict }: { dict: Dictionary }) {
   );
 }
 
-export function CtaBand({ locale, dict }: { locale: Locale; dict: Dictionary }) {
+export async function CtaBand({ locale, dict }: { locale: Locale; dict: Dictionary }) {
+  const company = await getSettings();
   return (
     <section className="relative isolate overflow-hidden bg-ink text-white">
       <Image src="/images/hero/slide2.jpeg" alt="" fill sizes="100vw" className="-z-10 object-cover opacity-25" />

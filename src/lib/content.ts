@@ -4,10 +4,22 @@ import type { Locale } from "./routes";
 
 export type { Locale };
 
-export const company = {
-  name: "PT Aditya Andhika Utama",
-  short: "PT.AAU",
-  founded: "1994-05-26",
+export const companyName = "PT Aditya Andhika Utama";
+
+export type Settings = {
+  email: string;
+  phone: string;
+  phoneAlt: string;
+  mobile: string;
+  whatsapp: string;
+  office: { lines: string[]; maps: string; embed: string };
+  warehouse: { lines: string[]; maps: string };
+  profilePdf: { id: string; en: string };
+  guestbookForm: string;
+};
+
+// Nilai bawaan: dipakai sebagai seed database dan cadangan bila Supabase belum dikonfigurasi.
+export const defaultSettings: Settings = {
   email: "marketing@pt-aau.com",
   phone: "021-44834737",
   phoneAlt: "021-44834745",
@@ -31,6 +43,7 @@ export const company = {
 };
 
 export type Project = {
+  id?: string;
   slug: string;
   title: string;
   cover: string;
@@ -41,7 +54,7 @@ export type Project = {
 
 const img = (f: string) => `/images/projects/${f}`;
 
-export const projects: Project[] = [
+export const defaultProjects: Project[] = [
   {
     slug: "wide-cargo-project-to-palembang",
     title: "Wide Cargo Project To Palembang",
@@ -114,7 +127,9 @@ export const projects: Project[] = [
   },
 ];
 
-export const testimonials = [
+export type Testimonial = { id?: string; quote: string; name: string; company: string };
+
+export const defaultTestimonials: Testimonial[] = [
   {
     quote: "Sudah beberapa tahun kami bekerja sama, dan pelayanannya selalu memuaskan.",
     name: "Hanna Yustika",
@@ -261,6 +276,22 @@ const id = {
     downloads: "Unduhan",
     profile: "Company Profile (PDF)",
     profileEn: "Company Profile – English (PDF)",
+  },
+  contactForm: {
+    eyebrow: "Kirim Pesan",
+    title: "Minta penawaran",
+    body: "Isi formulir berikut dan tim marketing kami akan menghubungi Anda kembali.",
+    name: "Nama",
+    company: "Perusahaan",
+    email: "Email",
+    phone: "Telepon / WhatsApp",
+    message: "Muatan, rute, dan jadwal",
+    submit: "Kirim Pesan",
+    sending: "Mengirim…",
+    success: "Terima kasih! Pesan Anda sudah kami terima.",
+    error: "Pesan gagal dikirim. Silakan coba lagi atau hubungi kami lewat WhatsApp.",
+    needContact: "Isi email atau nomor telepon agar kami bisa membalas.",
+    optional: "opsional",
   },
   guestbook: {
     title: "Buku Tamu",
@@ -449,6 +480,22 @@ const en: Dictionary = {
     profile: "Company Profile (PDF)",
     profileEn: "Company Profile – Indonesian (PDF)",
   },
+  contactForm: {
+    eyebrow: "Send a Message",
+    title: "Request a quote",
+    body: "Fill in the form below and our marketing team will get back to you.",
+    name: "Name",
+    company: "Company",
+    email: "Email",
+    phone: "Phone / WhatsApp",
+    message: "Cargo, route and schedule",
+    submit: "Send Message",
+    sending: "Sending…",
+    success: "Thank you! We have received your message.",
+    error: "The message could not be sent. Please try again or contact us via WhatsApp.",
+    needContact: "Please fill in an email or phone number so we can reply.",
+    optional: "optional",
+  },
   guestbook: {
     title: "Guestbook",
     body: "Please fill in our guestbook below. Your data is handled according to our Privacy Policy.",
@@ -511,4 +558,3 @@ const en: Dictionary = {
 
 export const dictionaries: Record<Locale, Dictionary> = { id, en };
 
-export const getProject = (slug: string) => projects.find((p) => p.slug === slug);

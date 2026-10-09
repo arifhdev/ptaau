@@ -17,7 +17,9 @@ import {
   Testimonials,
   WhatsAppIcon,
 } from "@/components/sections";
-import { company, dictionaries, getProject, projects } from "@/lib/content";
+import { companyName, dictionaries } from "@/lib/content";
+import { getProject, getProjects, getSettings } from "@/lib/data";
+import { ContactForm } from "@/components/ContactForm";
 import { projectHref, routes, type Locale } from "@/lib/routes";
 
 export function HomeView({ locale }: { locale: Locale }) {
@@ -130,8 +132,9 @@ export function AboutView({ locale }: { locale: Locale }) {
   );
 }
 
-export function ProjectsView({ locale }: { locale: Locale }) {
+export async function ProjectsView({ locale }: { locale: Locale }) {
   const dict = dictionaries[locale];
+  const projects = await getProjects();
   return (
     <>
       <PageHero eyebrow={dict.projectsSection.eyebrow} title={dict.projectsSection.title} image="/images/hero/slide1.jpg" />
@@ -150,12 +153,13 @@ export function ProjectsView({ locale }: { locale: Locale }) {
   );
 }
 
-export function ProjectDetailView({ locale, slug }: { locale: Locale; slug: string }) {
-  const project = getProject(slug);
+export async function ProjectDetailView({ locale, slug }: { locale: Locale; slug: string }) {
+  const [projects, company] = await Promise.all([getProjects(), getSettings()]);
+  const project = await getProject(slug);
   if (!project) notFound();
   const dict = dictionaries[locale];
   const s = dict.projectsSection;
-  const i = projects.indexOf(project);
+  const i = projects.findIndex((p) => p.slug === project.slug);
   const next = projects[(i + 1) % projects.length];
 
   return (
@@ -225,8 +229,9 @@ export function ProjectDetailView({ locale, slug }: { locale: Locale; slug: stri
   );
 }
 
-export function ContactView({ locale }: { locale: Locale }) {
+export async function ContactView({ locale }: { locale: Locale }) {
   const dict = dictionaries[locale];
+  const company = await getSettings();
   const c = dict.contact;
   const other: Locale = locale === "id" ? "en" : "id";
   const places = [
@@ -266,7 +271,7 @@ export function ContactView({ locale }: { locale: Locale }) {
 
             <dl className="divide-y divide-line border-y border-line">
               {[
-                { k: c.phone, v: `${company.phone} / 745`, href: `tel:${company.phone.replace(/-/g, "")}` },
+                { k: c.phone, v: company.phoneAlt ? `${company.phone} / ${company.phoneAlt}` : company.phone, href: `tel:${company.phone.replace(/-/g, "")}` },
                 { k: c.mobile, v: company.mobile, href: `https://wa.me/${company.whatsapp}` },
                 { k: c.email, v: company.email, href: `mailto:${company.email}` },
               ].map((row) => (
@@ -305,7 +310,7 @@ export function ContactView({ locale }: { locale: Locale }) {
           <div className="relative min-h-[26rem] overflow-hidden bg-ink-2">
             <iframe
               src={company.office.embed}
-              title={`${c.office} – ${company.name}`}
+              title={`${c.office} – ${companyName}`}
               className="absolute inset-0 size-full grayscale-[0.4]"
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
@@ -313,13 +318,22 @@ export function ContactView({ locale }: { locale: Locale }) {
           </div>
         </Container>
       </section>
-      <CtaBand locale={locale} dict={dict} />
+      <section id="form" className="scroll-mt-24 bg-ink py-20 text-white sm:py-28">
+        <Container className="grid gap-12 lg:grid-cols-[1fr_1.4fr] lg:gap-20">
+          <div>
+            <SectionHeading eyebrow={dict.contactForm.eyebrow} title={dict.contactForm.title} tone="light" />
+            <p className="mt-6 max-w-md text-lg text-white/70">{dict.contactForm.body}</p>
+          </div>
+          <ContactForm locale={locale} labels={dict.contactForm} />
+        </Container>
+      </section>
     </>
   );
 }
 
-export function GuestbookView({ locale }: { locale: Locale }) {
+export async function GuestbookView({ locale }: { locale: Locale }) {
   const g = dictionaries[locale].guestbook;
+  const company = await getSettings();
   return (
     <>
       <PageHero eyebrow="PT.AAU" title={g.title} image="/images/hero/slide3.jpeg" />
@@ -342,8 +356,9 @@ export function GuestbookView({ locale }: { locale: Locale }) {
   );
 }
 
-export function PrivacyView({ locale }: { locale: Locale }) {
+export async function PrivacyView({ locale }: { locale: Locale }) {
   const p = dictionaries[locale].privacy;
+  const company = await getSettings();
   return (
     <>
       <PageHero eyebrow="PT.AAU" title={p.title} image="/images/hero/slide2.jpeg" />

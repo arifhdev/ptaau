@@ -66,7 +66,7 @@ export function Header({ locale, labels, logo }: { locale: Locale; labels: NavLa
         <div className="flex items-center gap-3">
           <LangSwitch locale={locale} altHref={altHref} />
           <Link
-            href={r.contact}
+            href={`${r.contact}#form`}
             className="hidden bg-signal px-5 py-2.5 font-display text-sm font-bold uppercase tracking-wider text-ink transition-colors hover:bg-white sm:inline-block"
           >
             {labels.cta}
@@ -106,7 +106,7 @@ export function Header({ locale, labels, logo }: { locale: Locale; labels: NavLa
             </Link>
           ))}
           <Link
-            href={r.contact}
+            href={`${r.contact}#form`}
             onClick={() => setOpen(false)}
             className="mt-5 bg-signal px-5 py-3.5 text-center font-display font-bold uppercase tracking-wider text-ink"
           >

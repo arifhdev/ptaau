@@ -1,9 +1,11 @@
 import Link from "next/link";
-import { company, type Dictionary } from "@/lib/content";
+import { companyName, type Dictionary } from "@/lib/content";
+import { getSettings } from "@/lib/data";
 import { routes, type Locale } from "@/lib/routes";
 import { Logo } from "./Logo";
 
-export function Footer({ locale, dict }: { locale: Locale; dict: Dictionary }) {
+export async function Footer({ locale, dict }: { locale: Locale; dict: Dictionary }) {
+  const company = await getSettings();
   const r = routes[locale];
   const nav = [
     { href: r.about, label: dict.nav.about },
@@ -54,7 +56,8 @@ export function Footer({ locale, dict }: { locale: Locale; dict: Dictionary }) {
             </p>
             <p>
               <a href={`tel:${company.phone.replace(/-/g, "")}`} className="hover:text-white">
-                {company.phone} / 745
+                {company.phone}
+                {company.phoneAlt && ` / ${company.phoneAlt}`}
               </a>
             </p>
             <p>
@@ -72,7 +75,7 @@ export function Footer({ locale, dict }: { locale: Locale; dict: Dictionary }) {
       </div>
       <div className="border-t border-white/10">
         <p className="mx-auto max-w-7xl px-4 py-6 text-xs sm:px-6 lg:px-8">
-          © {company.name}. {dict.footer.rights}
+          © {companyName}. {dict.footer.rights}
         </p>
       </div>
     </footer>

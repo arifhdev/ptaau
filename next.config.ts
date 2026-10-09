@@ -11,6 +11,10 @@ const nextConfig: NextConfig = {
     ];
   },
   cacheComponents: true,
+  images: {
+    // Foto yang diunggah lewat admin disimpan di Supabase Storage
+    remotePatterns: [{ protocol: "https", hostname: "*.supabase.co", pathname: "/storage/v1/object/public/**" }],
+  },
   partialPrefetching: true,
   turbopack: {
     rules: {

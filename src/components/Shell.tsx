@@ -1,23 +1,18 @@
-import { Barlow_Condensed, Inter } from "next/font/google";
-import { company, dictionaries } from "@/lib/content";
+import { dictionaries } from "@/lib/content";
+import { getSettings } from "@/lib/data";
 import { routes, type Locale } from "@/lib/routes";
 import { Footer } from "./Footer";
 import { Header } from "./Header";
 import { Logo } from "./Logo";
 import { WhatsAppIcon } from "./sections";
+import { fontVariables } from "@/lib/fonts";
 import "../app/globals.css";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const barlow = Barlow_Condensed({
-  subsets: ["latin"],
-  weight: ["500", "600", "700", "800"],
-  variable: "--font-barlow",
-});
-
-export function Shell({ locale, children }: { locale: Locale; children: React.ReactNode }) {
+export async function Shell({ locale, children }: { locale: Locale; children: React.ReactNode }) {
   const dict = dictionaries[locale];
+  const company = await getSettings();
   return (
-    <html lang={locale} className={`${inter.variable} ${barlow.variable} antialiased`}>
+    <html lang={locale} className={`${fontVariables} antialiased`}>
       <body className="flex min-h-svh flex-col font-sans">
         <Header locale={locale} labels={dict.nav} logo={<Logo href={routes[locale].home} />} />
         <main className="flex-1">{children}</main>
