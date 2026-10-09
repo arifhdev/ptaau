@@ -51,6 +51,12 @@ export async function signInWithPassword(_prev: FormState, fd: FormData): Promis
     if (error.status === 429) return { error: "Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi." };
     return { error: "Email atau password salah." };
   }
+  // Akun Supabase yang valid belum tentu admin website.
+  const { data: isAdmin } = await supabase.rpc("is_admin");
+  if (!isAdmin) {
+    await supabase.auth.signOut();
+    return { error: "Akun ini belum terdaftar sebagai admin. Minta admin lain menambahkannya di menu Pengguna admin." };
+  }
   redirect("/admin");
 }
 
