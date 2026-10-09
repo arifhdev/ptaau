@@ -1,26 +1,77 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-ink: #0f0f0d;
+  --color-ink-2: #1a1a17;
+  --color-ink-3: #2a2a25;
+  --color-paper: #f4f2ec;
+  --color-paper-2: #e9e6dc;
+  --color-steel: #6b6a63;
+  --color-line: #d8d4c7;
+  --color-signal: #ffd400;
+  --color-signal-deep: #e0b800;
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-barlow);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+
+::selection {
+  background: var(--color-signal);
+  color: var(--color-ink);
+}
+
+/* Garis hazard kuning-hitam sebagai aksen industri */
+.hazard {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--color-signal) 0 14px,
+    var(--color-ink) 14px 28px
+  );
+}
+
+.eyebrow {
+  font-family: var(--font-barlow);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+@keyframes hero-zoom {
+  from {
+    transform: scale(1.08);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.animate-hero-zoom {
+  animation: hero-zoom 7s ease-out forwards;
+}
+
+@keyframes grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .animate-hero-zoom {
+    animation: none;
+  }
 }
