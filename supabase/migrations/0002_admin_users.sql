@@ -16,8 +16,9 @@ create policy "admins manage admins" on public.admins
   for all to authenticated using (public.is_admin()) with check (public.is_admin());
 
 -- Jangan sampai tidak ada admin sama sekali.
+-- security definer: hitung semua baris, bukan hanya yang terlihat lewat RLS si penghapus.
 create or replace function public.keep_one_admin()
-returns trigger language plpgsql as $$
+returns trigger language plpgsql security definer set search_path = '' as $$
 begin
   if (select count(*) from public.admins) = 0 then
     raise exception 'Minimal harus ada satu admin.';
