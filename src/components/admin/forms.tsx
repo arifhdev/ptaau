@@ -3,14 +3,18 @@
 import Link from "next/link";
 import { useActionState, useState, useTransition } from "react";
 import {
+  addAdmin,
+  changePassword,
   deleteMessage,
   deleteProject,
   deleteTestimonial,
   saveProject,
   saveSettings,
   saveTestimonial,
+  removeAdmin,
   sendMagicLink,
   setMessageRead,
+  signInWithPassword,
   setProjectPublished,
   type FormState,
 } from "@/lib/actions/admin";
@@ -33,15 +37,51 @@ const slugify = (s: string) =>
 // Login -----------------------------------------------------------------------
 
 export function LoginForm() {
+  const [mode, setMode] = useState<"password" | "link">("password");
+  return mode === "password" ? (
+    <PasswordLogin onForgot={() => setMode("link")} />
+  ) : (
+    <MagicLinkLogin onBack={() => setMode("password")} />
+  );
+}
+
+function PasswordLogin({ onForgot }: { onForgot: () => void }) {
+  const [state, action, pending] = useActionState(signInWithPassword, {});
+  return (
+    <form action={action} className="space-y-4">
+      <Field label="Email">
+        <input name="email" type="email" required autoComplete="username" autoFocus className={inputClass} />
+      </Field>
+      <Field label="Password">
+        <input name="password" type="password" required autoComplete="current-password" className={inputClass} />
+      </Field>
+      <Feedback state={state} />
+      <button type="submit" disabled={pending} className={`${buttonClass.accent} w-full py-3`}>
+        {pending ? "Masuk…" : "Masuk"}
+      </button>
+      <button type="button" onClick={onForgot} className="w-full text-sm text-steel underline-offset-4 hover:text-ink hover:underline">
+        Lupa password? Masuk lewat link email
+      </button>
+    </form>
+  );
+}
+
+function MagicLinkLogin({ onBack }: { onBack: () => void }) {
   const [state, action, pending] = useActionState(sendMagicLink, {});
   return (
     <form action={action} className="space-y-4">
+      <p className="text-sm text-steel">
+        Kami kirim link login sekali pakai ke email Anda. Setelah masuk, buat password baru di menu <b>Akun saya</b>.
+      </p>
       <Field label="Email admin">
         <input name="email" type="email" required autoComplete="email" autoFocus className={inputClass} />
       </Field>
       <Feedback state={state} />
       <button type="submit" disabled={pending} className={`${buttonClass.accent} w-full py-3`}>
         {pending ? "Mengirim…" : "Kirim link login"}
+      </button>
+      <button type="button" onClick={onBack} className="w-full text-sm text-steel underline-offset-4 hover:text-ink hover:underline">
+        ← Kembali ke login dengan password
       </button>
     </form>
   );
@@ -309,6 +349,101 @@ export function MessageActions({ id, read }: { id: string; read: boolean }) {
       >
         Hapus
       </button>
+    </div>
+  );
+}
+
+// Akun & pengguna admin -------------------------------------------------------
+
+export function ChangePasswordForm({ needsCurrent }: { needsCurrent: boolean }) {
+  const [state, action, pending] = useActionState(changePassword, {});
+  return (
+    <form action={action} key={state.ok ? "done" : "form"} className="max-w-md space-y-4">
+      {needsCurrent ? (
+        <Field label="Password saat ini">
+          <input name="current" type="password" required autoComplete="current-password" className={inputClass} />
+        </Field>
+      ) : (
+        <Notice tone="ok">Anda baru masuk lewat link email, jadi password lama tidak diperlukan.</Notice>
+      )}
+      <Field label="Password baru" hint="Minimal 8 karakter.">
+        <input name="password" type="password" required minLength={8} autoComplete="new-password" className={inputClass} />
+      </Field>
+      <Field label="Ulangi password baru">
+        <input name="confirm" type="password" required minLength={8} autoComplete="new-password" className={inputClass} />
+      </Field>
+      <Feedback state={state} />
+      <button type="submit" disabled={pending} className={buttonClass.primary}>
+        {pending ? "Menyimpan…" : "Ganti password"}
+      </button>
+    </form>
+  );
+}
+
+export function AddAdminForm({ disabled }: { disabled?: boolean }) {
+  const [state, action, pending] = useActionState(addAdmin, {});
+  const [password, setPassword] = useState("");
+
+  function generate() {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+    const bytes = crypto.getRandomValues(new Uint32Array(12));
+    setPassword(Array.from(bytes, (n) => chars[n % chars.length]).join(""));
+  }
+
+  return (
+    <form action={action} className="grid gap-4 p-5 sm:grid-cols-2">
+      <Field label="Nama">
+        <input name="name" className={inputClass} placeholder="Nama lengkap" disabled={disabled} />
+      </Field>
+      <Field label="Email">
+        <input name="email" type="email" required className={inputClass} disabled={disabled} />
+      </Field>
+      <Field label="Password awal" hint="Bagikan secara pribadi; admin baru bisa menggantinya di menu Akun saya." className="sm:col-span-2">
+        <div className="flex gap-2">
+          <input
+            name="password"
+            required
+            minLength={8}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="off"
+            className={`${inputClass} font-mono`}
+            disabled={disabled}
+          />
+          <button type="button" onClick={generate} className={`${buttonClass.ghost} shrink-0`} disabled={disabled}>
+            Buat acak
+          </button>
+        </div>
+      </Field>
+      <div className="flex flex-wrap items-center gap-4 sm:col-span-2">
+        <button type="submit" disabled={pending || disabled} className={buttonClass.primary}>
+          {pending ? "Menambahkan…" : "Tambah admin"}
+        </button>
+        <div className="flex-1">
+          <Feedback state={state} />
+        </div>
+      </div>
+    </form>
+  );
+}
+
+export function RemoveAdminButton({ email }: { email: string }) {
+  const [pending, start] = useTransition();
+  const [error, setError] = useState("");
+  return (
+    <div className="text-right">
+      <button
+        type="button"
+        disabled={pending}
+        onClick={() =>
+          confirm(`Hapus ${email} dari admin? Akun login-nya juga akan dihapus.`) &&
+          start(async () => setError((await removeAdmin(email)).error ?? ""))
+        }
+        className={buttonClass.danger}
+      >
+        Hapus
+      </button>
+      {error && <p className="mt-1 text-xs text-red-700">{error}</p>}
     </div>
   );
 }

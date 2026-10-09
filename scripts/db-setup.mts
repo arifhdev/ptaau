@@ -6,7 +6,7 @@
 // Membaca .env.local: SUPABASE_DB_URL, NEXT_PUBLIC_SUPABASE_URL,
 // SUPABASE_SERVICE_ROLE_KEY (opsional), ADMIN_EMAILS (dipisah koma).
 
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { createClient } from "@supabase/supabase-js";
 import postgres from "postgres";
 import { defaultProjects, defaultSettings, defaultTestimonials } from "../src/lib/content.ts";
@@ -21,7 +21,11 @@ const sql = postgres(env("SUPABASE_DB_URL"), { ssl: "require", max: 1, onnotice:
 
 try {
   console.log("1/4 Menjalankan migration…");
-  await sql.unsafe(readFileSync(new URL("../supabase/migrations/0001_init.sql", import.meta.url), "utf8"));
+  const dir = new URL("../supabase/migrations/", import.meta.url);
+  for (const file of readdirSync(dir).filter((f) => f.endsWith(".sql")).sort()) {
+    console.log(`   ${file}`);
+    await sql.unsafe(readFileSync(new URL(file, dir), "utf8"));
+  }
 
   console.log("2/4 Mengisi data awal…");
   const [{ count: projectCount }] = await sql`select count(*)::int from public.projects`;
@@ -83,10 +87,14 @@ try {
   } else {
     const auth = createClient(env("NEXT_PUBLIC_SUPABASE_URL"), serviceKey, { auth: { persistSession: false } }).auth.admin;
     for (const email of emails) {
-      const { error } = await auth.createUser({ email, email_confirm: true });
+      const { data, error } = await auth.createUser({ email, email_confirm: true });
+      if (data.user) await sql`update public.admins set user_id = ${data.user.id} where email = ${email}`;
       console.log(`   ${email}: ${error ? (error.code === "email_exists" ? "sudah ada" : error.message) : "dibuat"}`);
     }
   }
+
+  // Sinkronkan user_id untuk akun yang dibuat manual lewat dashboard.
+  await sql`update public.admins a set user_id = u.id from auth.users u where a.user_id is null and lower(u.email) = a.email`;
 
   console.log("\nSelesai. Login di /admin/login dengan email di atas.");
 } finally {

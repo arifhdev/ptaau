@@ -27,7 +27,7 @@ export default function LoginPage() {
             )}
           </div>
           <p className="mt-6 text-xs leading-relaxed text-steel">
-            Kami akan mengirim link login sekali pakai ke email Anda. Hanya email yang terdaftar sebagai admin yang bisa masuk.
+            Hanya akun yang terdaftar sebagai admin yang bisa masuk. Belum punya akun? Minta admin lain menambahkan Anda.
           </p>
         </div>
       </div>

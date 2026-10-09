@@ -3,10 +3,12 @@
 import { refresh, updateTag } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/admin/auth";
+import { loggedInByEmailLinkRecently, requireAdmin } from "@/lib/admin/auth";
 import { TAGS } from "@/lib/data";
 import { hasSupabase } from "@/lib/supabase/env";
+import { createPublicClient } from "@/lib/supabase/public";
 import { createSessionClient } from "@/lib/supabase/server";
+import { createServiceClient, hasServiceKey } from "@/lib/supabase/service";
 
 export type FormState = { ok?: boolean; error?: string; message?: string };
 
@@ -36,6 +38,20 @@ export async function sendMagicLink(_prev: FormState, fd: FormData): Promise<For
   if (error?.status === 429) return { error: "Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi." };
   // Pesan sama untuk email terdaftar maupun tidak, supaya daftar admin tidak bisa ditebak.
   return { ok: true, message: `Jika ${email} terdaftar sebagai admin, link login sudah dikirim. Cek inbox Anda.` };
+}
+
+export async function signInWithPassword(_prev: FormState, fd: FormData): Promise<FormState> {
+  if (!hasSupabase) return { error: "Supabase belum dikonfigurasi." };
+  const supabase = await createSessionClient();
+  const { error } = await supabase.auth.signInWithPassword({
+    email: text(fd, "email").toLowerCase(),
+    password: String(fd.get("password") ?? ""),
+  });
+  if (error) {
+    if (error.status === 429) return { error: "Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi." };
+    return { error: "Email atau password salah." };
+  }
+  redirect("/admin");
 }
 
 export async function signOut() {
@@ -169,4 +185,71 @@ export async function deleteMessage(id: string) {
   const { supabase } = await requireAdmin();
   await supabase.from("messages").delete().eq("id", id);
   refresh();
+}
+
+// Akun & pengguna admin -------------------------------------------------------
+
+const MIN_PASSWORD = 8;
+
+export async function changePassword(_prev: FormState, fd: FormData): Promise<FormState> {
+  const { supabase, email } = await requireAdmin();
+  const current = String(fd.get("current") ?? "");
+  const next = String(fd.get("password") ?? "");
+  if (next.length < MIN_PASSWORD) return { error: `Password baru minimal ${MIN_PASSWORD} karakter.` };
+  if (next !== String(fd.get("confirm") ?? "")) return { error: "Konfirmasi password tidak sama." };
+
+  // Wajib password lama, kecuali baru saja masuk lewat link email (mis. lupa password).
+  if (!(await loggedInByEmailLinkRecently(supabase))) {
+    const { error } = await createPublicClient().auth.signInWithPassword({ email, password: current });
+    if (error) return { error: "Password saat ini salah." };
+  }
+
+  const { error } = await supabase.auth.updateUser({ password: next });
+  if (error) {
+    return { error: error.code === "same_password" ? "Password baru harus berbeda dari yang lama." : error.message };
+  }
+  return { ok: true, message: "Password berhasil diganti." };
+}
+
+export async function addAdmin(_prev: FormState, fd: FormData): Promise<FormState> {
+  const { supabase, email: by } = await requireAdmin();
+  if (!hasServiceKey) return { error: "SUPABASE_SERVICE_ROLE_KEY belum dipasang di server." };
+
+  const email = text(fd, "email").toLowerCase();
+  const name = text(fd, "name");
+  const password = String(fd.get("password") ?? "");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: "Format email tidak valid." };
+  if (password.length < MIN_PASSWORD) return { error: `Password awal minimal ${MIN_PASSWORD} karakter.` };
+
+  const auth = createServiceClient().auth.admin;
+  const { data, error } = await auth.createUser({ email, password, email_confirm: true, user_metadata: { name } });
+  if (error && error.code !== "email_exists") return { error: error.message };
+
+  // Kalau akunnya sudah ada (mis. pernah dibuat manual), cukup jadikan admin; password tidak diubah.
+  const { error: insertError } = await supabase
+    .from("admins")
+    .upsert({ email, name: name || null, user_id: data.user?.id ?? null, created_by: by }, { onConflict: "email" });
+  if (insertError) return { error: insertError.message };
+
+  refresh();
+  return {
+    ok: true,
+    message: data.user
+      ? `${email} ditambahkan. Bagikan password awalnya secara pribadi dan minta ia menggantinya di menu Akun saya.`
+      : `${email} sudah punya akun dan sekarang menjadi admin. Password-nya tidak diubah.`,
+  };
+}
+
+export async function removeAdmin(email: string): Promise<FormState> {
+  const { supabase, email: me } = await requireAdmin();
+  if (email === me.toLowerCase()) return { error: "Anda tidak bisa menghapus akun sendiri." };
+
+  const { data: target } = await supabase.from("admins").select("user_id").eq("email", email).maybeSingle();
+  const { error } = await supabase.from("admins").delete().eq("email", email);
+  if (error) return { error: error.message };
+
+  // Hapus juga akun login-nya agar tidak bisa masuk lagi.
+  if (target?.user_id && hasServiceKey) await createServiceClient().auth.admin.deleteUser(target.user_id);
+  refresh();
+  return { ok: true };
 }

@@ -9,6 +9,8 @@ const items = [
   { href: "/admin/testimoni", label: "Testimoni" },
   { href: "/admin/pesan", label: "Pesan masuk" },
   { href: "/admin/pengaturan", label: "Info perusahaan" },
+  { href: "/admin/pengguna", label: "Pengguna admin" },
+  { href: "/admin/akun", label: "Akun saya" },
 ];
 
 export function SidebarNav() {
